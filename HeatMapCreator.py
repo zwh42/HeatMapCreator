@@ -65,7 +65,8 @@ def draw_heatmap(x, y, map_value):
     plt.axis([plt_x.min(), plt_x.max(), plt_y.min(), plt_y.max()])
     plt.title('heatmap')
     plt.colorbar().set_label("color bar", rotation=270)   
-    #plt.show()
+    ax = plt.gca()
+    ax.set_aspect('equal')
     figure = plt.gcf()
     print figure
     return figure    
@@ -93,9 +94,12 @@ def create_heatmap_button_callback():
     print "create heatmap from " + job_path_string    
     
     x, y, map_value = get_xyz_from_csv_file(job_path_string)
+    
+   
+
     figure = draw_heatmap(x, y, map_value)
 
-    canvas = FigureCanvasTkAgg(figure, master = root)
+    canvas = FigureCanvasTkAgg(figure, master = frame_right)
     canvas.show()
     heatmap = canvas.get_tk_widget()
     heatmap.grid(row=1,column=1)
@@ -110,19 +114,28 @@ def gui_setup(root):
     canvas.show()
     '''
     global job_path_entry
-    job_path_entry = tk.Entry(master = root)
+    global frame_right    
+    
+    frame_left = tk.Frame(root, bg='white')
+    frame_right = tk.Frame(root,bg='blue') 
+
+    job_path_entry = tk.Entry(master = frame_left)
     job_path_entry.grid(row=1, column=0, sticky = tk.W)
     job_path_entry.insert(0, "input job path")
     
-    select_job_button = tk.Button(master = root, text = "select job path", command = select_job_button_callback)
+    select_job_button = tk.Button(master = frame_left, text = "select job path", command = select_job_button_callback)
     select_job_button.grid(row = 2, column = 0, sticky = tk.W)
-    create_heatmap_button = tk.Button(master = root, text = "create heat map", command = create_heatmap_button_callback)
+    create_heatmap_button = tk.Button(master = frame_left, text = "create heat map", command = create_heatmap_button_callback)
     create_heatmap_button.grid(row = 3,column = 0, sticky = tk.W)
     
-    runtime_ration_button = tk.Radiobutton(master = root, text = "run time")
-    runtime_ration_button.grid(row = 2, column = 2)
-    memory_radio_button = tk.Radiobutton(master = root, text = "memory")
-    memory_radio_button.grid(row = 3, column = 2)
+    runtime_ration_button = tk.Radiobutton(master = frame_left, text = "run time (seconds)", value = 1)
+    runtime_ration_button.grid(row = 4, column = 0)
+    memory_radio_button = tk.Radiobutton(master = frame_left, text = "memory usage (MB)", value = 2)
+    memory_radio_button.grid(row = 5, column = 0)
+
+
+    frame_left.grid(row = 0, column = 0)
+    frame_right.grid(row = 0, column = 1)
     
 
     
