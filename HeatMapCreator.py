@@ -36,7 +36,7 @@ def get_xyz_from_csv_file(csv_file_path):
 
   
         
-def draw_heatmap(x, y, map_value):
+def draw_heatmap(x, y, map_value, settings):
     """        
     draw heat map from input
     input: 
@@ -59,12 +59,14 @@ def draw_heatmap(x, y, map_value):
     z_max = plt_z.max()
     plt_z = np.transpose(plt_z)    
 
+    plot_name = settings.get("plot_name")
+    
 
-
-    plt.pcolor(plt_x, plt_y, plt_z, cmap=plt.cm.gist_heat, vmin=z_min, vmax=z_max)
+    color_map = plt.cm.gist_heat #plt.cm.rainbow #plt.cm.hot #plt.cm.gist_heat
+    plt.pcolor(plt_x, plt_y, plt_z, cmap=color_map, vmin=z_min, vmax=z_max)
     plt.axis([plt_x.min(), plt_x.max(), plt_y.min(), plt_y.max()])
-    plt.title('heatmap')
-    plt.colorbar().set_label("color bar", rotation=270)   
+    plt.title(plot_name)
+    plt.colorbar().set_label(plot_name, rotation=270)   
     ax = plt.gca()
     ax.set_aspect('equal')
     figure = plt.gcf()
@@ -77,74 +79,84 @@ def draw_heatmap(x, y, map_value):
 
 def quit_gui():
     root.quit()
-    root.destroy()
+    root.destroy()    
+
+
+class HeatMapCreator:
+    def __init__(self, master):
+        self.master = master
+        self.create_layout() 
+
+    def create_layout(self):
+        self.frame_left = tk.Frame(self.master)
+        self.frame_right = tk.Frame(self.master)
+
+        self.job_path_entry = tk.Entry(master = self.frame_left)
+        self.job_path_entry.grid(row=1, column=0, sticky = tk.W)
+        self.job_path_entry.insert(0, "input job path...")
+
+        self.select_job_button = tk.Button(master = self.frame_left, text = "select job path", command = self.select_job_button_callback)
+        self.select_job_button.grid(row = 2, column = 0, sticky = tk.W)
+
+        self.create_heatmap_button = tk.Button(master = self.frame_left, text = "create heat map", command = self.create_heatmap_button_callback)
+        self.create_heatmap_button.grid(row = 10,column = 0, sticky = tk.W)
+
+        
+        self.plot_name = tk.IntVar()
+        self.runtime_ration_button = tk.Radiobutton(master = self.frame_left, text = "run time (seconds)", value = 1, variable = self.plot_name)
+        self.runtime_ration_button.grid(row = 4, column = 0)
+        
+        self.memory_radio_button = tk.Radiobutton(master = self.frame_left, text = "memory usage (MB)", value = 2, variable = self.plot_name)
+        self.memory_radio_button.grid(row = 5, column = 0)
+
+        self.user_defined_radio_button = tk.Radiobutton(master = self.frame_left, text = "user define:", value = 3, variable = self.plot_name)
+        self.user_defined_radio_button.grid(row = 6, column = 0)
+        self.user_defined_input_entry = tk.Entry(master = self.frame_left)
+        self.user_defined_input_entry.grid(row = 7, column = 0)
+
+
+
+
+        
+
+        self.frame_left.grid(row = 0, column = 0)
+        self.frame_right.grid(row = 0, column = 1)
+
+    def select_job_button_callback(self):
+        #job_path = tkFileDialog.askdirectory()
+        self.job_path = tkFileDialog.askopenfilename()
+        self.job_path_entry.delete(0, tk.END)
+        self.job_path_entry.insert(0, self.job_path)    
     
-    
-def select_job_button_callback():
-    #job_path = tkFileDialog.askdirectory()
-    job_path = tkFileDialog.askopenfilename()
-    job_path_entry.delete(0, tk.END)
-    job_path_entry.insert(0, job_path)
+    def create_heatmap_button_callback(self):
+        print "clicked create heat map button."
+        self.job_path_string = self.job_path_entry.get()
+        print "create heatmap from " + self.job_path_string       
+        x, y, map_value = get_xyz_from_csv_file(self.job_path_string)
 
+        settings = {}    
+        if self.plot_name.get() == 1:
+            settings["plot_name"] = "run time (seconds)"
+        elif self.plot_name.get() == 2:
+            settings["plot_name"] = "memory usage (MB)"
+        elif self.plot_name.get() == 3:
+            settings["plot_name"] = self.user_defined_input_entry.get()
 
+        figure = draw_heatmap(x, y, map_value, settings)    
+        canvas = FigureCanvasTkAgg(figure, master = self.frame_right)
+        canvas.show()
+        heatmap = canvas.get_tk_widget()
+        heatmap.grid(row=1,column=1)
 
-def create_heatmap_button_callback():
-    print "clicked create heat map button."
-    job_path_string = job_path_entry.get()
-    print "create heatmap from " + job_path_string    
-    
-    x, y, map_value = get_xyz_from_csv_file(job_path_string)
-    
-   
-
-    figure = draw_heatmap(x, y, map_value)
-
-    canvas = FigureCanvasTkAgg(figure, master = frame_right)
-    canvas.show()
-    heatmap = canvas.get_tk_widget()
-    heatmap.grid(row=1,column=1)
-
-
-
-def gui_setup(root):
-    
-    '''
-    f = figure
-    canvas = FigureCanvasTkAgg(f, master = root)
-    canvas.show()
-    '''
-    global job_path_entry
-    global frame_right    
-    
-    frame_left = tk.Frame(root, bg='white')
-    frame_right = tk.Frame(root,bg='blue') 
-
-    job_path_entry = tk.Entry(master = frame_left)
-    job_path_entry.grid(row=1, column=0, sticky = tk.W)
-    job_path_entry.insert(0, "input job path")
-    
-    select_job_button = tk.Button(master = frame_left, text = "select job path", command = select_job_button_callback)
-    select_job_button.grid(row = 2, column = 0, sticky = tk.W)
-    create_heatmap_button = tk.Button(master = frame_left, text = "create heat map", command = create_heatmap_button_callback)
-    create_heatmap_button.grid(row = 3,column = 0, sticky = tk.W)
-    
-    runtime_ration_button = tk.Radiobutton(master = frame_left, text = "run time (seconds)", value = 1)
-    runtime_ration_button.grid(row = 4, column = 0)
-    memory_radio_button = tk.Radiobutton(master = frame_left, text = "memory usage (MB)", value = 2)
-    memory_radio_button.grid(row = 5, column = 0)
-
-
-    frame_left.grid(row = 0, column = 0)
-    frame_right.grid(row = 0, column = 1)
-    
-
-    
     
 
 def main():
     global root
-    root = tk.Tk()    
-    gui_setup(root)    
+    root = tk.Tk()
+    #root.title("Heat Map Creator ver0.12")    
+    #gui_setup(root)    
+    HeatMapCreator(root)
+    
     tk.mainloop()  
 
 
